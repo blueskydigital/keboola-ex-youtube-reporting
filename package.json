@@ -1,0 +1,25 @@
+{
+  "name": "keboola-ex-youtubeapi-reporting",
+  "version": "1.0.0",
+  "description": "A simple app for getting data from Youtube Reporting Api",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Radek Tomasek <radek@bluesky.pro>",
+  "license": "ISC",
+  "dependencies": {
+    "babyparse": "^0.4.3",
+    "commander": "^2.9.0",
+    "crypto": "0.0.3",
+    "fast-csv": "^0.6.0",
+    "googleapis": "^2.1.6",
+    "is-there": "^4.1.0",
+    "jsonfile": "^2.2.3",
+    "lodash": "^3.10.1",
+    "moment": "^2.10.6",
+    "nconf": "^0.8.2",
+    "nconf-yaml": "^1.0.1",
+    "q": "^1.4.1"
+  }
+}
