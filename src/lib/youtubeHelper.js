@@ -18,6 +18,7 @@ var auth = require('./oAuthHelper')(config)
 
 var initialTimestamp = config.get('parameters:initial_timestamp') || moment().subtract(2, 'days').unix()
 var maximumTimestamp = config.get('parameters:maximum_timestamp') || moment().unix()
+var processingTimestamps = []
 
 // This method helps to reduce number of request by filtering out reportTypeId elements.
 // If config file contains array of parameters:report_types then the user wants to download only these reports.
@@ -48,6 +49,12 @@ YoutubeHelper.groupTimestamps = function(configArray) {
 
 YoutubeHelper.indexJobsAndTimestamps = function(groupedArray) {
   return _.chain(groupedArray).indexBy('jobId').mapValues('timestamps').value()
+}
+
+YoutubeHelper.getMaximumTimestamps = function(groupedObject) {
+  return _.mapValues(groupedObject, function(values) {
+    return [_.max(values)]
+  })
 }
 
 // A simple function that iterates over data rows and add md5 hash values of columns (defined in configuration)
@@ -203,7 +210,8 @@ YoutubeHelper.prepareArrayOfReportPromises = function(reportObjects) {
               var unixTimestamp = moment(report.createTime, 'YYYY-MM-DDTHH:mm:ss.SSSSSSZ').unix()
 
               var tablesDir = path.join(dataDir, 'out', 'tables')
-              var fileName = report.id + '_' + unixTimestamp + '_' + report.reportTypeId + '.csv'
+              var filePrefix = unixTimestamp + '_' + report.id
+              var fileName = filePrefix + '_' + report.reportTypeId + '.csv'
               var manifestName = fileName + '.manifest'
 
               var manifestString = {
@@ -247,7 +255,9 @@ YoutubeHelper.prepareArrayOfReportPromises = function(reportObjects) {
                     if (error) {
                       deferred.reject(error)
                     } else {
-                      deferred.resolve({ jobId: report.reportTypeId, timestamp: unixTimestamp })
+                      // I need to figure out a better way
+                      processingTimestamps.push({ jobId: report.reportTypeId, timestamp: unixTimestamp })
+                      deferred.resolve(processingTimestamps)
                     }
                   })
                 })
@@ -290,7 +300,7 @@ YoutubeHelper.readStateFile = function(filteredJobs) {
 YoutubeHelper.synchronizeStateFile = function(downloadedObjects) {
   var deferred = Q.defer()
 
-  if (downloadedObjects.length === 0) {
+  if (_.isUndefined(downloadedObjects)) {
     deferred.resolve('No new data available!')
   } else {
     // First of all is necessary to load the original state.json file - to make sure we won't skip any value.
@@ -300,7 +310,7 @@ YoutubeHelper.synchronizeStateFile = function(downloadedObjects) {
 
     jsonfile.readFile(path.join(dataInDir, fileName), function(error, object) {
       if (!error || error.code === 'ENOENT' ) {
-        var outputJson = YoutubeHelper.indexJobsAndTimestamps(YoutubeHelper.groupTimestamps(downloadedObjects))
+        var outputJson = YoutubeHelper.getMaximumTimestamps(YoutubeHelper.indexJobsAndTimestamps(YoutubeHelper.groupTimestamps(downloadedObjects)))
         var outputObject = object || {}
 
         _.forIn(outputJson, function(value, key) {
