@@ -281,6 +281,8 @@ YoutubeHelper.readStateFile = function(filteredJobs) {
 
   jsonfile.readFile(path.join(dataInDir, fileName), function(error, object) {
     if (!error || error.code === 'ENOENT' ) {
+      console.log(object)
+
       var jobs = filteredJobs.map(function(job) {
         job["lastDownloadTimestamp"] = (_.has(object, job.reportTypeId)) ? _.max(object[job["reportTypeId"]]) : initialTimestamp
         job["maximumDownloadTimestamp"] = maximumTimestamp
