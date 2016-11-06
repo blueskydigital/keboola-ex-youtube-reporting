@@ -12,7 +12,8 @@ import {
 } from 'lodash';
 import {
   ERROR_TYPE,
-  FINISH_TYPE
+  FINISH_TYPE,
+  CREATE_TIME
 } from '../constants';
 import {
   transformEpochTimestampIntoDate
@@ -46,10 +47,10 @@ export function filterJobsList(jobs, reportTypes) {
 /**
  * This function iterates over job filter and add information about createdAfter timestamp.
  */
-export function extendJobsByAddingCreatedAfterDate(jobs, state, defaultTimestamp) {
+export function extendJobsByAddingCreatedAfterDate(jobs, state, defaultTimestamp, ignoreStateFile) {
   return jobs.map(job => {
     return Object.assign({}, job, {
-      createdAfter: transformEpochTimestampIntoDate(getJobTimestamp(job, state, defaultTimestamp))
+      createdAfter: transformEpochTimestampIntoDate(getJobTimestamp(job, state, defaultTimestamp, ignoreStateFile))
     });
   });
 }
@@ -59,10 +60,11 @@ export function extendJobsByAddingCreatedAfterDate(jobs, state, defaultTimestamp
  * prepares the correct initial timestamp for each input job.
  * If stored (state) value is much older than user wants to download,
  * the newest one is used.
+ * If ignoreStateFile is true, the default timestamp/or specified in the config is applied.
  */
-export function getJobTimestamp(job, state, defaultTimestamp) {
+export function getJobTimestamp(job, state, defaultTimestamp, ignoreStateFile) {
   const { reportTypeId } = job;
-  if (!isUndefined(state[reportTypeId])) {
+  if (!isUndefined(state[reportTypeId]) && !ignoreStateFile) {
     return defaultTimestamp > state[reportTypeId]
       ? defaultTimestamp
       : state[reportTypeId];
@@ -130,8 +132,8 @@ export function prepareListOfReportsForDownload({
               createdAfter: job.createdAfter
             });
             pageToken = youtubeReports.nextPageToken;
-            const newReports = youtubeReports.reports || [];
-            listOfReports = [ ...listOfReports, ...newReports ];
+            const reports = youtubeReports.reports || [];
+            listOfReports = [ ...listOfReports, ...reports ];
             hasMoreReports = isUndefined(youtubeReports.nextPageToken);
           }
           hasMoreReports = false;
@@ -193,8 +195,15 @@ export function downloadSelectedReport({
 /**
  * This function groups reports by their types.
  */
-export function groupReportsByTypes(reports) {
-  return groupBy(reports, 'jobId');
+export function groupReportsByTypes(reports, type) {
+  return groupBy(reports, type);
+}
+
+/**
+ * This function prepares a set (N records) of the oldest reports.
+ */
+export function getNumberOfOldestRecords(reports, limit, type) {
+  return sortReportsForDownloadAndApplyLimit(groupReportsByTypes(reports, type), limit);
 }
 
 /**
@@ -204,7 +213,21 @@ export function sortReportsForDownload(reportsByTypes) {
   return flattenDeep(Object
     .keys(reportsByTypes)
     .map(reportTypeId => {
-      return sortBy(reportsByTypes[reportTypeId], 'createTime');
+      return sortBy(reportsByTypes[reportTypeId], CREATE_TIME);
+    }));
+}
+
+/**
+ * This function is similar sortReportsForDownload, however it also applies a limit to each array.
+ */
+export function sortReportsForDownloadAndApplyLimit(reportsByTypes, limit) {
+  return flattenDeep(Object
+    .keys(reportsByTypes)
+    .map(reportTypeId => {
+      return sortBy(reportsByTypes[reportTypeId], CREATE_TIME);
+    })
+    .map(reportTypeElements => {
+      return reportTypeElements.slice(0, limit);
     }));
 }
 

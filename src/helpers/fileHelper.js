@@ -49,7 +49,7 @@ export function readFilesFromDirectory(filesDirectory) {
  * It also modify the input file and generate an key element which helps
  * to store the object in Keboola Connection.
  */
-export function transformFilesByAddingAnIdElement(source, destination, keys) {
+export function transformFilesByAddingAnIdElement(source, destination, reportType, keyFields, customPrimaryKeys) {
   return new Promise((resolve, reject) => {
     const headers = !isThere(destination);
     const includeEndRowDelimiter = true;
@@ -58,7 +58,7 @@ export function transformFilesByAddingAnIdElement(source, destination, keys) {
     const writeStream = fs.createWriteStream(destination, { flags: 'a', encoding: 'utf8'});
     csv
       .fromStream(readStream, { headers: true })
-      .transform(obj => combineDataWithKeys(obj, keys))
+      .transform(obj => combineDataWithKeys(obj, reportType, keyFields, customPrimaryKeys))
       .on(ERROR_TYPE, error => {
         reject(error);
       })

@@ -35,18 +35,22 @@ import {
   groupReportsByTypes,
   sortReportsForDownload,
   addExtraReportMetadata,
+  getNumberOfOldestRecords,
   prepareListOfReportsForDownload,
   extendJobsByAddingCreatedAfterDate
 } from './helpers/youtubeHelper';
 import {
+  JOB_ID,
   IN_DIR,
   OUT_DIR,
-  KEY_FIELDS,
   STATE_FILE,
   CONFIG_FILE,
   PRIMARY_KEY,
+  KEY_SUFFIXES,
   IS_INCREMENTAL,
-  DEFAULT_TABLES_OUT_DIR
+  REPORT_TYPE_ID,
+  DEFAULT_TABLES_OUT_DIR,
+  REPORTS_NUMBER_PER_REPORT_TYPE_LIMIT
 } from './constants';
 
 /**
@@ -66,7 +70,9 @@ import {
       reportTypes,
       clientSecret,
       refreshToken,
+      ignoreStateFile,
       initialTimestamp,
+      customPrimaryKeys,
       onBehalfOfContentOwner
     } = await parseConfiguration(getConfig(path.join(command.data, CONFIG_FILE)));
     // Prepares the directory for the output.
@@ -92,11 +98,12 @@ import {
     // List of the desired jobs. Will be extended by initial date
     // which indicates the earliest possible download date.
     const filteredJobs = extendJobsByAddingCreatedAfterDate(
-      filterJobsList(jobs, reportTypes), inputState, initialTimestamp
+      filterJobsList(jobs, reportTypes), inputState, initialTimestamp, ignoreStateFile
     );
 
     // It makes a sense to continue, only if there is any record in the filteredJobs array.
     if (size(filteredJobs) > 0) {
+
       // Report list.
       const reportsToDownload = await prepareListOfReportsForDownload({
         auth,
@@ -107,9 +114,9 @@ import {
       });
 
       // In this part we are going to group the results by their particular types.
-      const reports = addExtraReportMetadata(
-        sortReportsForDownload(groupReportsByTypes(reportsToDownload)), filteredJobs
-      );
+      const reports = getNumberOfOldestRecords(addExtraReportMetadata(
+        sortReportsForDownload(groupReportsByTypes(reportsToDownload, JOB_ID)), filteredJobs
+      ), REPORTS_NUMBER_PER_REPORT_TYPE_LIMIT, REPORT_TYPE_ID);
 
       // Here we are going to download each report and wait until the process is completed.
       const downloadedReports = await Promise.all(downloadReports({
@@ -124,7 +131,7 @@ import {
       const fileMetadata = prepareMetadataForFileTransfers(downloadedFiles, downloadDir, dataOutDir);
 
       // Now it is time to transfer files from the source directory (tmp directory) into destination (table output dir).
-      const transferedFiles = await transferFilesFromSourceToDestination(fileMetadata, KEY_FIELDS);
+      const transferedFiles = await transferFilesFromSourceToDestination(fileMetadata, KEY_SUFFIXES, customPrimaryKeys);
 
       // This function prepares the data for state.json configuration.
       const outputState = combineStates(inputState, transformDatesIntoTimestamps(

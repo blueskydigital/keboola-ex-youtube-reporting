@@ -9,10 +9,8 @@ export const DEFAULT_TABLES_OUT_DIR = `/${OUT_DIR}/tables`;
 export const DEFAULT_TOKEN_TYPE = 'Bearer';
 export const PRIMARY_KEY = [ 'id' ];
 export const IS_INCREMENTAL = true;
-export const DEFAULT_PAGE_SIZE = 400;
-export const KEY_FIELDS = [
-  "date", "channel_id", "video_id", "country_code"
-];
+export const REPORTS_NUMBER_PER_REPORT_TYPE_LIMIT = 20;
+export const DEFAULT_PAGE_SIZE = 300;
 export const DEFAULT_YOUTUBE_NAMESPACES = [
   "https://www.googleapis.com/auth/yt-analytics-monetary.readonly",
   "https://www.googleapis.com/auth/yt-analytics.readonly"
@@ -20,6 +18,19 @@ export const DEFAULT_YOUTUBE_NAMESPACES = [
 export const DEFAULT_START_DATE_TIMESTAMP = 1438430400;
 export const DEFAULT_REDIRECT_URL = 'urn:ietf:wg:oauth:2.0:oob';
 export const DEFAULT_OAUTH_EXPIRATION_TIMESTAMP = 1447278755869;
+
+// Key suffixes
+export const KEY_SUFFIXES = [
+  "date", "id", "status", "type", "code", "detail"
+];
+
+// job types
+export const JOB_ID = 'jobId';
+export const REPORT_TYPE_ID = 'reportTypeId';
+export const CREATE_TIME = 'createTime';
+
+// Field names
+export const DATE_FIELD = 'date';
 
 // Event types
 export const END_TYPE = 'end';
