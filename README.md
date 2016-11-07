@@ -57,7 +57,7 @@ The application flow is very simple and contain following steps:
 * (4) The downloaded data are stored incrementally in KBC and/or backuped on S3, if you specify special parameters (and s3 params).
 * (5) The updates state file is going to be stored in Keboola and this prevents you from downloading the same data over and over.
 
-### (0) Reading of the state file
+### Reading of the state file (0)
 
 The state file aggregates all timestamps which helps to download data incrementally. You can see how the file might look like:
 
@@ -69,23 +69,23 @@ There is **ignoreStateFile** parameter. It is an optional one, but if you set it
 
 Another hidden feature is to specify the **initialTimestamp** with bigger value than ones stored in the state file. For example, if you have the key **content_owner_ad_performance_a1** set to 1472948267 in the state file and you will set **initialTimestamp** to 1472948300, the latter (1472948300) will be used for the content_owner_ad_performance_a1 (but not for content_owner_cards_a1, because the timestamp > 1472948300).
 
-### (1) List Jobs
+### List Jobs (1)
 
 This part lists all scheduled jobs from the API. After the list is read, the array of parameter **reportTypes** is applied and only those jobs are sent for further processing.
 
-### (2) Reading all available reports
+### Reading all available reports (2)
 
 The **initialTimestamp** parameter (or numeric value from the report type from the state file) is going to be used as a report creation timestamp and as the earliest date from when the reports are going to be selected. This step simply iterates over all available reports (for specified jobs) and prepares a list of reports.
 
 
-### (3) Limits
+### Limits (3)
 **There is a limitation**. This list is going to be reduced to 20 reports per report type (**you can also specify only 3 report types per configuration**), from the oldest to the newer ones.
 
 This limit helps to manage the limitation of the Youtube Reporting API as well as the the memory used in the Docker environment for Keboola Connection.
 
 The only implication for the end-user is that he (or she) must to run the same configuration a few times until all reports for specified report types are downloaded. Afterwards you should be fine to run the process regularly on a daily basis.
 
-#### (4) Downloaded data
+### Downloaded data (4)
 
 Data which are going to be download with this extractor are supposed to be stored in Keboola Connection. The chunk of the report type data are merged and stored in one file named as a report type. And data are stored incrementally. You can also specify that you can do a backup on S3, or copy the files directly without storing them in Keboola Connection (handy for debugging purposes). There are two optional parameters **s3OutputOnly** and **s3Backup** which are by default set to false.
 
@@ -101,7 +101,7 @@ These rules serve well for all major datasets. If (for some reason) there is a d
       "content_owner_ad_performance_a1": [ "date", "channel_id", "video_id", "asset_id", "claimed_status", "uploader_type", "live_or_on_demand", "subscribed_status", "country_code", "playback_location_type", "playback_location_detail" ]
     }
 
-#### (5) Storing the state file
+### Storing the state file (5)
 
 The final part is all about storing the updated state file into Keboola Connection. Keys are merged from the input configuration and if any new report was downloaded, the relevant timestamp is going to be stored on the output part.
 
