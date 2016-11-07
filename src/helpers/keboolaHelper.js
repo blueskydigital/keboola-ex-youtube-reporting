@@ -318,9 +318,6 @@ export function combineStates(inputState, outputState) {
  */
 export function generateManifestFiles(files, dataOutDir, state) {
   return files.map(file => {
-    const tmpState = Object.assign({}, state, {
-      destination: `in.c-ex_youtube_reporting_debug.${file.slice(0,-4)}`
-    });
-    return createStateFile(dataOutDir, `${file}.manifest`, tmpState);
+    return createStateFile(dataOutDir, `${file}.manifest`, state);
   });
 }
