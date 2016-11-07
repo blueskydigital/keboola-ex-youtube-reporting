@@ -1,3 +1,4 @@
+import AWS from 'aws-sdk';
 import path from 'path';
 import rimraf from 'rimraf-promise';
 import command from './helpers/cliHelper';
@@ -10,6 +11,9 @@ import {
 import {
   authorization
 } from './helpers/oAuthHelper';
+import {
+  uploadFilesOnS3
+} from './helpers/s3Helper';
 import {
   readStateFile,
   createStateFile,
@@ -63,16 +67,23 @@ import {
       scopes,
       clientId,
       pageSize,
+      s3Backup,
+      s3Region,
       tokenType,
       expiryDate,
+      remotePath,
       accessToken,
       redirectUrl,
       reportTypes,
       clientSecret,
       refreshToken,
+      s3OutputOnly,
+      s3BucketName,
+      s3AccessKeyId,
       ignoreStateFile,
       initialTimestamp,
       customPrimaryKeys,
+      s3SecretAccessKey,
       onBehalfOfContentOwner
     } = await parseConfiguration(getConfig(path.join(command.data, CONFIG_FILE)));
     // Prepares the directory for the output.
@@ -103,7 +114,6 @@ import {
 
     // It makes a sense to continue, only if there is any record in the filteredJobs array.
     if (size(filteredJobs) > 0) {
-
       // Report list.
       const reportsToDownload = await prepareListOfReportsForDownload({
         auth,
@@ -127,21 +137,29 @@ import {
       // In this step we are going to download names of the files we downloaded in the previous step.
       const downloadedFiles = await readFilesFromDirectory(downloadDir);
 
-      // We also have to prepare the proper metadata for file transfer.
-      const fileMetadata = prepareMetadataForFileTransfers(downloadedFiles, downloadDir, dataOutDir);
+      if (!s3OutputOnly) {
+        // We also have to prepare the proper metadata for file transfer.
+        const fileMetadata = prepareMetadataForFileTransfers(downloadedFiles, downloadDir, dataOutDir);
 
-      // Now it is time to transfer files from the source directory (tmp directory) into destination (table output dir).
-      const transferedFiles = await transferFilesFromSourceToDestination(fileMetadata, KEY_SUFFIXES, customPrimaryKeys);
+        // Now it is time to transfer files from the source directory (tmp directory) into destination (table output dir).
+        const transferedFiles = await transferFilesFromSourceToDestination(fileMetadata, KEY_SUFFIXES, customPrimaryKeys);
+
+        // We need to create manifests which stores data in Keboola.
+        const mergedFiles = await readFilesFromDirectory(dataOutDir);
+        const manifests = await Promise.all(generateManifestFiles(mergedFiles, dataOutDir, { incremental: IS_INCREMENTAL, primary_key: PRIMARY_KEY }));
+      }
+
+      // We can backup/store the files on S3 storage.
+      if (s3OutputOnly || s3Backup) {
+        AWS.config.update({ region: s3Region, accessKeyId: s3AccessKeyId, secretAccessKey: s3SecretAccessKey });
+        const backupFiles = await Promise.all(uploadFilesOnS3(AWS, downloadDir, downloadedFiles, s3BucketName, remotePath));
+        console.log('Downloaded files backuped on S3!');
+      }
 
       // This function prepares the data for state.json configuration.
       const outputState = combineStates(inputState, transformDatesIntoTimestamps(
         getLatestCreatedDateForEachReportType(downloadedReports)
       ));
-
-      // We need to create manifests which stores data in Keboola.
-      const mergedFiles = await readFilesFromDirectory(dataOutDir);
-      const manifests = await Promise.all(generateManifestFiles(mergedFiles, dataOutDir, { incremental: IS_INCREMENTAL, primary_key: PRIMARY_KEY }));
-
       // Storing the output state file for next run.
       const outputStateFile = await createStateFile(configOutDir, STATE_FILE, outputState);
       // Cleaning.

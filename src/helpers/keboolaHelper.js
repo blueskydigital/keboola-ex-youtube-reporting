@@ -19,10 +19,13 @@ import {
   isUndefined
 } from 'lodash';
 import {
+  S3_REGIONS,
   DATE_FIELD,
   DEFAULT_PAGE_SIZE,
+  DEFAULT_S3_REGION,
   DEFAULT_TOKEN_TYPE,
   DEFAULT_REDIRECT_URL,
+  DEFAULT_S3_OUTPUT_DIR,
   DEFAULT_YOUTUBE_NAMESPACES,
   DEFAULT_START_DATE_TIMESTAMP,
   DEFAULT_OAUTH_EXPIRATION_TIMESTAMP
@@ -103,6 +106,33 @@ export function parseConfiguration(configObject) {
         });
     }
 
+    // S3 related configuration (for backup purposes).
+    const s3OutputOnly = !isUndefined(configObject.get('parameters:s3OutputOnly'))
+      ? configObject.get('parameters:s3OutputOnly')
+      : false;
+
+    const s3Backup = !isUndefined(configObject.get('parameters:s3Backup'))
+      ? configObject.get('parameters:s3Backup')
+      : false;
+
+    const s3AccessKeyId = configObject.get('parameters:#s3AccessKeyId');
+    const s3SecretAccessKey = configObject.get('parameters:#s3SecretAccessKey');
+    const s3BucketName = configObject.get('parameters:s3BucketName');
+    const s3RemotePath = configObject.get('parameters:s3RemotePath') || '/';
+    const s3Region = configObject.get('parameters:s3Region') || DEFAULT_S3_REGION;
+    const remotePath = s3RemotePath === '/' ? DEFAULT_S3_OUTPUT_DIR : s3RemotePath;
+
+    // If S3 is requested, we must make sure the credentials are defined.
+    if (s3OutputOnly || s3Backup) {
+      if (isUndefined(s3AccessKeyId) || isUndefined(s3SecretAccessKey) || isUndefined(s3BucketName)) {
+        reject('You want to write data to s3, but no s3 credentials specified. Check out the documentation for more details.');
+      }
+
+      if (!includes(S3_REGIONS, s3Region)) {
+        reject(`Invalid S3 Region! Only values ${S3_REGIONS.join(', ')} are allowed. Check out the documentation for more details.`);
+      }
+    }
+
     // Check the report types array, which will be used for data downloading.
     const reportTypes = configObject.get('parameters:reportTypes');
     if (!reportTypes) {
@@ -123,15 +153,22 @@ export function parseConfiguration(configObject) {
     // After first usage, you must to set it back to false, otherwhise it will always download data from the beginning.
     const ignoreStateFile = !isUndefined(configObject.get('parameters:ignoreStateFile'))
       ? configObject.get('parameters:ignoreStateFile')
-      : false
+      : false;
 
     resolve({
       clientId,
+      s3Backup,
+      s3Region,
+      remotePath,
       accessToken,
+      s3OutputOnly,
       clientSecret,
       refreshToken,
+      s3BucketName,
+      s3AccessKeyId,
       ignoreStateFile,
       initialTimestamp,
+      s3SecretAccessKey,
       onBehalfOfContentOwner,
       reportTypes: uniq(reportTypes),
       pageSize: DEFAULT_PAGE_SIZE,
