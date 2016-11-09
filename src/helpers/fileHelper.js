@@ -5,6 +5,7 @@ import path from 'path';
 import isThere from 'is-there';
 import jsonfile from 'jsonfile';
 import { isNull } from 'lodash';
+import rimraf from 'rimraf-promise';
 import {
   END_TYPE,
   ERROR_TYPE,
@@ -103,4 +104,11 @@ export function createStateFile(stateDir, file, data) {
       }
     });
   });
+}
+
+/**
+ * Cleaning the array of directories.
+ */
+export function removeDirectories(directories) {
+  return directories.map(directory => rimraf(directory));
 }

@@ -149,11 +149,11 @@ export function prepareListOfReportsForDownload({
 /**
  * This function iterates over all records in an array and start downloading the reports.
  */
-export function downloadReports({ auth, reports, outputDirectory, youtubeReporting, onBehalfOfContentOwner }) {
+export function downloadReports({ auth, isBackup, reports, outputDirectory, youtubeReporting, onBehalfOfContentOwner }) {
   return reports
     .map(report => {
       return downloadSelectedReport({
-        auth, report, outputDirectory,
+        auth, report, isBackup, outputDirectory,
         youtubeReporting, onBehalfOfContentOwner
       });
     });
@@ -165,6 +165,7 @@ export function downloadReports({ auth, reports, outputDirectory, youtubeReporti
 export function downloadSelectedReport({
   auth,
   report,
+  isBackup,
   outputDirectory,
   youtubeReporting,
   onBehalfOfContentOwner
@@ -181,7 +182,9 @@ export function downloadSelectedReport({
         reject(error);
       } else {
         const headers = true;
-        const fileName = `${reportTypeId}_${reportDate}.csv`;
+        const fileName = !isBackup
+          ? `${reportTypeId}_${reportDate}.csv`
+          : `${reportTypeId}_${createTime}.csv`;
         const parsedFile = parse(response);
         csv
           .writeToPath(path.join(outputDirectory, fileName), parsedFile.data, { headers })

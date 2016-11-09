@@ -1,6 +1,5 @@
 import AWS from 'aws-sdk';
 import path from 'path';
-import rimraf from 'rimraf-promise';
 import command from './helpers/cliHelper';
 import {
   youtubereporting
@@ -17,6 +16,7 @@ import {
 import {
   readStateFile,
   createStateFile,
+  removeDirectories,
   createTmpDirectory,
   runPromisesInSeries,
   readFilesFromDirectory
@@ -54,7 +54,9 @@ import {
   IS_INCREMENTAL,
   REPORT_TYPE_ID,
   DEFAULT_TABLES_OUT_DIR,
-  REPORTS_NUMBER_PER_REPORT_TYPE_LIMIT
+  YOUTUBE_REPORTING_FILES,
+  REPORTS_NUMBER_PER_REPORT_TYPE_LIMIT,
+  YOUTUBE_REPORTING_FILES_BY_CREATE_TIMES
 } from './constants';
 
 /**
@@ -88,6 +90,7 @@ import {
     } = await parseConfiguration(getConfig(path.join(command.data, CONFIG_FILE)));
     // Prepares the directory for the output.
     const downloadDir = await createTmpDirectory();
+    const backupDir = await createTmpDirectory();
     const dataDir = command.data;
     const configInDir = path.join(dataDir, IN_DIR);
     const configOutDir = path.join(dataDir, OUT_DIR);
@@ -130,8 +133,8 @@ import {
 
       // Here we are going to download each report and wait until the process is completed.
       const downloadedReports = await Promise.all(downloadReports({
-        auth, reports, onBehalfOfContentOwner,
-        youtubeReporting, outputDirectory: downloadDir
+        auth, onBehalfOfContentOwner, youtubeReporting,
+        reports, outputDirectory: downloadDir, isBackup: false
       }));
 
       // In this step we are going to download names of the files we downloaded in the previous step.
@@ -149,21 +152,31 @@ import {
         const manifests = await Promise.all(generateManifestFiles(mergedFiles, dataOutDir, { incremental: IS_INCREMENTAL, primary_key: PRIMARY_KEY }));
       }
 
-      // We can backup/store the files on S3 storage.
-      if (s3OutputOnly || s3Backup) {
-        AWS.config.update({ region: s3Region, accessKeyId: s3AccessKeyId, secretAccessKey: s3SecretAccessKey });
-        const backupFiles = await Promise.all(uploadFilesOnS3(AWS, downloadDir, downloadedFiles, s3BucketName, remotePath));
-        console.log('Downloaded files backuped on S3!');
-      }
-
       // This function prepares the data for state.json configuration.
       const outputState = combineStates(inputState, transformDatesIntoTimestamps(
         getLatestCreatedDateForEachReportType(downloadedReports)
       ));
+
+      // We can backup/store the files on S3 storage.
+      if (s3OutputOnly || s3Backup) {
+        AWS.config.update({ region: s3Region, accessKeyId: s3AccessKeyId, secretAccessKey: s3SecretAccessKey });
+        const backupFiles = await Promise.all(uploadFilesOnS3(AWS, downloadDir, downloadedFiles, s3BucketName, `${remotePath}/${YOUTUBE_REPORTING_FILES}`));
+
+        // Here we are going to download each report again and store them in a different directory with different names.
+        const reportsWithCreatedTimes = await Promise.all(downloadReports({
+          auth, onBehalfOfContentOwner, youtubeReporting,
+          reports, outputDirectory: backupDir, isBackup: true
+        }));
+
+        const filesWithCreatedTimes = await readFilesFromDirectory(backupDir);
+        const fullBackup = await Promise.all(uploadFilesOnS3(AWS, backupDir, filesWithCreatedTimes, s3BucketName, `${remotePath}/${YOUTUBE_REPORTING_FILES_BY_CREATE_TIMES}`));
+        console.log('Downloaded files backuped on S3!');
+      }
+
       // Storing the output state file for next run.
       const outputStateFile = await createStateFile(configOutDir, STATE_FILE, outputState);
       // Cleaning.
-      const cleaning = await rimraf(downloadDir);
+      const cleaning = await Promise.all(removeDirectories([ downloadDir, backupDir ]));
       console.log('Extraction completed!');
     } else {
       console.log(`None on the specified report types (${reportTypes.join(',')} found! No data downloaded.`);

@@ -136,6 +136,12 @@ To reflect the steps from above, you have to prepare the configuration. The comp
 
 **Important note**: Attributes which contain hashes at beginning of their names mean that the values are going to be encrypted once configuration is saved. For that reason the sensitive information is well protected.
 
+## S3 Backup
+
+By default, this option is disabled, but you can create backups which will be stored on the S3 storage. If you set either **s3Backup** or **s3OutputOnly** to true and pass the credentials, it will create two directories **youtube_reporting_data** and **youtube_reporting_data_by_create_times**.
+
+The first one (**youtube_reporting_data**) will store the daily increments where the filename contains the data which particular file includes. From time to time Google regenerates the reports and after certain period of time some of these reports will be rewritten (they will have a new **create date**, but the actual data are going to be for older ones). However, in order to really keep all files no matter what, the second folder (**youtube_reporting_data_by_create_times**) contain original data where the filenames contain report create time. This value is always unique which guarantees no data are going to be lost (by rewriting files).        
+
 ## Question/Issue Reporting
 
 In case of any question/issue, don't hesitate to contact us and we can try to help you.
