@@ -115,8 +115,6 @@ import {
       filterJobsList(jobs, reportTypes), inputState, initialTimestamp, ignoreStateFile
     );
 
-    console.log('filteredJobs: ', filteredJobs);
-
     // It makes a sense to continue, only if there is any record in the filteredJobs array.
     if (size(filteredJobs) > 0) {
       // Report list.
@@ -128,22 +126,16 @@ import {
         onBehalfOfContentOwner
       });
 
-      console.log('reportsToDownload');
-
       // In this part we are going to group the results by their particular types.
       const reports = getNumberOfOldestRecords(addExtraReportMetadata(
         sortReportsForDownload(groupReportsByTypes(reportsToDownload, JOB_ID)), filteredJobs
       ), REPORTS_NUMBER_PER_REPORT_TYPE_LIMIT, REPORT_TYPE_ID);
-
-      console.log('reports: ', reports);
 
       // Here we are going to download each report and wait until the process is completed.
       const downloadedReports = await Promise.all(downloadReports({
         auth, onBehalfOfContentOwner, youtubeReporting,
         reports, outputDirectory: downloadDir, isBackup: false
       }));
-
-      console.log('downloadedReports: ', downloadedReports);
 
       // In this step we are going to download names of the files we downloaded in the previous step.
       const downloadedFiles = await readFilesFromDirectory(downloadDir);

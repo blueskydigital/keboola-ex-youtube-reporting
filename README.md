@@ -53,7 +53,7 @@ The application flow is very simple and contain following steps:
 * (0) The first step is downloading the state file (if there is any). All timestamps will be used as a starting point from when the extraction part starts.
 * (1) Listing all jobs and reading only the ones specified in the configuration (at least 1 must be specified).  
 * (2) Application then reads all reports available in the job created after certain date (you can handle this timestamp by input config & it is updated after the extractor finishes successfully).
-* (3) It is allowed to download reports for just 3 report types at the same time. For each of them the first 20 reports are selected and sent for further download (after the new process starts for the next time, it will download next 20 reports per report types).    
+* (3) It is allowed to download reports for just 3 report types at the same time. For each of them the first 10 reports are selected and sent for further download (after the new process starts for the next time, it will download next 10 reports per report types).    
 * (4) The downloaded data are stored incrementally in KBC and/or backuped on S3, if you specify special parameters (and s3 params).
 * (5) The updates state file is going to be stored in Keboola and this prevents you from downloading the same data over and over.
 
@@ -79,7 +79,7 @@ The **initialTimestamp** parameter (or numeric value from the report type from t
 
 
 ### Limits (3)
-**There is a limitation**. This list is going to be reduced to 20 reports per report type (**you can also specify only 3 report types per configuration**), from the oldest to the newer ones.
+**There is a limitation**. This list is going to be reduced to 10 reports per report type (**you can also specify only 3 report types per configuration**), from the oldest to the newer ones.
 
 This limit helps to manage the limitation of the Youtube Reporting API as well as the the memory used in the Docker environment for Keboola Connection.
 
