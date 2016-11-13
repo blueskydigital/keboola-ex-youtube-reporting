@@ -53,7 +53,7 @@ The application flow is very simple and contain following steps:
 * (0) The first step is downloading the state file (if there is any). All timestamps will be used as a starting point from when the extraction part starts.
 * (1) Listing all jobs and reading only the ones specified in the configuration (at least 1 must be specified).  
 * (2) Application then reads all reports available in the job created after certain date (you can handle this timestamp by input config & it is updated after the extractor finishes successfully).
-* (3) It is allowed to download reports for just 3 report types at the same time. For each of them the first 10 reports are selected and sent for further download (after the new process starts for the next time, it will download next 10 reports per report types).    
+* (3) It is allowed to download reports for just 3 report types at the same time. For each of them the first 25 reports are selected and sent for further download (after the new process starts for the next time, it will download next 25 reports per report types).    
 * (4) The downloaded data are stored incrementally in KBC and/or backuped on S3, if you specify special parameters (and s3 params).
 * (5) The updates state file is going to be stored in Keboola and this prevents you from downloading the same data over and over.
 
@@ -79,11 +79,13 @@ The **initialTimestamp** parameter (or numeric value from the report type from t
 
 
 ### Limits (3)
-**There is a limitation**. This list is going to be reduced to 10 reports per report type (**you can also specify only 3 report types per configuration**), from the oldest to the newer ones.
+**There is a limitation**. This list is going to be reduced to 25 reports per report type (**you can also specify only 3 report types per configuration**), from the oldest to the newer ones.
 
 This limit helps to manage the limitation of the Youtube Reporting API as well as the the memory used in the Docker environment for Keboola Connection.
 
 The only implication for the end-user is that he (or she) must to run the same configuration a few times until all reports for specified report types are downloaded. Afterwards you should be fine to run the process regularly on a daily basis.
+
+If (for some reasons) you need to reduce this limit to a lower number of reports per type (for example, the files are to big and there is some memory limitation), you can specify the parameter **batchSize**. The number must be less than or equal to 25.  
 
 ### Downloaded data (4)
 
@@ -119,6 +121,7 @@ To reflect the steps from above, you have to prepare the configuration. The comp
         "reportTypeId1", "reportTypeId2", "reportTypeId3"
       ],
       "initialTimestamp": 1464787516,
+      "batchSize": 20
       "ignoreStateFile": false (optional, by default it is set to false),
       "s3OutputOnly": false (optional, by default it is set to false),
       "s3Backup": true (optional, by default it is set to false),

@@ -28,7 +28,8 @@ import {
   DEFAULT_S3_OUTPUT_DIR,
   DEFAULT_YOUTUBE_NAMESPACES,
   DEFAULT_START_DATE_TIMESTAMP,
-  DEFAULT_OAUTH_EXPIRATION_TIMESTAMP
+  DEFAULT_OAUTH_EXPIRATION_TIMESTAMP,
+  REPORTS_NUMBER_PER_REPORT_TYPE_LIMIT
 } from '../constants';
 import {
   createStateFile,
@@ -71,6 +72,16 @@ export function parseConfiguration(configObject) {
     const refreshToken = configObject.get('parameters:#refreshToken');
     if (!refreshToken) {
       reject('Missing #refreshToken parameter! Check out the documentation for more details.');
+    }
+
+    // batch size
+    const batchSize = configObject.get('parameters:batchSize') || REPORTS_NUMBER_PER_REPORT_TYPE_LIMIT;
+    if (!isNumber(batchSize)) {
+      reject('Invalid batchSize parameter! Please use a numeric value. Check out the documentation for more details.');
+    }
+
+    if (batchSize <= 0 || batchSize > REPORTS_NUMBER_PER_REPORT_TYPE_LIMIT) {
+      reject(`Parameter 'batchSize' must be grater than 0 and less than or equal to ${REPORTS_NUMBER_PER_REPORT_TYPE_LIMIT}`);
     }
 
     // Read contentOwnerId which will be used as onBehalfOfContentOwner parameter.
@@ -159,6 +170,7 @@ export function parseConfiguration(configObject) {
       clientId,
       s3Backup,
       s3Region,
+      batchSize,
       remotePath,
       accessToken,
       s3OutputOnly,
@@ -215,15 +227,25 @@ export function transformDatesIntoTimestamps(state) {
 }
 
 /**
+ * This function extract createdDate from each filename.
+ */
+export function extractCreateTimesForReportTypes(files) {
+  return files.map(file => {
+    const metadata = file.split('|');
+    return { [ first(metadata) ]: last(metadata).slice(0,-4) }
+  });
+}
+
+/**
  * This function reads array of file names and prepare metadata which are going to be useful for file transfers.
  */
 export function prepareMetadataForFileTransfers(files, sourceDir, destinationDir) {
   return files
     .map(file => {
       return {
-        reportType: `${file.slice(0,-13)}`,
+        reportType: first(file.split('|')),
         source: `${sourceDir}/${file}`,
-        destination: `${destinationDir}/${file.slice(0,-13)}.csv`
+        destination: `${destinationDir}/${first(file.split('|'))}.csv`
       }
     });
 }

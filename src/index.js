@@ -18,7 +18,6 @@ import {
   createStateFile,
   removeDirectories,
   createTmpDirectory,
-  runPromisesInSeries,
   readFilesFromDirectory
 } from './helpers/fileHelper';
 import {
@@ -28,12 +27,12 @@ import {
   generateManifestFiles,
   transformDatesIntoTimestamps,
   prepareMetadataForFileTransfers,
+  extractCreateTimesForReportTypes,
   transferFilesFromSourceToDestination,
   getLatestCreatedDateForEachReportType
 } from './helpers/keboolaHelper';
 import {
   jobsList,
-  getReportList,
   filterJobsList,
   downloadReports,
   groupReportsByTypes,
@@ -55,7 +54,6 @@ import {
   REPORT_TYPE_ID,
   DEFAULT_TABLES_OUT_DIR,
   YOUTUBE_REPORTING_FILES,
-  REPORTS_NUMBER_PER_REPORT_TYPE_LIMIT,
   YOUTUBE_REPORTING_FILES_BY_CREATE_TIMES
 } from './constants';
 
@@ -71,6 +69,7 @@ import {
       pageSize,
       s3Backup,
       s3Region,
+      batchSize,
       tokenType,
       expiryDate,
       remotePath,
@@ -90,7 +89,7 @@ import {
     } = await parseConfiguration(getConfig(path.join(command.data, CONFIG_FILE)));
     // Prepares the directory for the output.
     const downloadDir = await createTmpDirectory();
-    const backupDir = await createTmpDirectory();
+    // const backupDir = await createTmpDirectory();
     const dataDir = command.data;
     const configInDir = path.join(dataDir, IN_DIR);
     const configOutDir = path.join(dataDir, OUT_DIR);
@@ -129,13 +128,13 @@ import {
       // In this part we are going to group the results by their particular types.
       const reports = getNumberOfOldestRecords(addExtraReportMetadata(
         sortReportsForDownload(groupReportsByTypes(reportsToDownload, JOB_ID)), filteredJobs
-      ), REPORTS_NUMBER_PER_REPORT_TYPE_LIMIT, REPORT_TYPE_ID);
+      ), batchSize, REPORT_TYPE_ID);
 
       // Here we are going to download each report and wait until the process is completed.
-      const downloadedReports = await Promise.all(downloadReports({
-        auth, onBehalfOfContentOwner, youtubeReporting,
-        reports, outputDirectory: downloadDir, isBackup: false
-      }));
+      const downloadedReports = await downloadReports({
+        onBehalfOfContentOwner, youtubeReporting,
+        auth, reports, outputDirectory: downloadDir
+      });
 
       // In this step we are going to download names of the files we downloaded in the previous step.
       const downloadedFiles = await readFilesFromDirectory(downloadDir);
@@ -154,29 +153,21 @@ import {
 
       // This function prepares the data for state.json configuration.
       const outputState = combineStates(inputState, transformDatesIntoTimestamps(
-        getLatestCreatedDateForEachReportType(downloadedReports)
+        getLatestCreatedDateForEachReportType(extractCreateTimesForReportTypes(downloadedFiles))
       ));
 
       // We can backup/store the files on S3 storage.
       if (s3OutputOnly || s3Backup) {
         AWS.config.update({ region: s3Region, accessKeyId: s3AccessKeyId, secretAccessKey: s3SecretAccessKey });
-        const backupFiles = await Promise.all(uploadFilesOnS3(AWS, downloadDir, downloadedFiles, s3BucketName, `${remotePath}/${YOUTUBE_REPORTING_FILES}`));
-
-        // Here we are going to download each report again and store them in a different directory with different names.
-        const reportsWithCreatedTimes = await Promise.all(downloadReports({
-          auth, onBehalfOfContentOwner, youtubeReporting,
-          reports, outputDirectory: backupDir, isBackup: true
-        }));
-
-        const filesWithCreatedTimes = await readFilesFromDirectory(backupDir);
-        const fullBackup = await Promise.all(uploadFilesOnS3(AWS, backupDir, filesWithCreatedTimes, s3BucketName, `${remotePath}/${YOUTUBE_REPORTING_FILES_BY_CREATE_TIMES}`));
+        const backupFiles = await Promise.all(uploadFilesOnS3(AWS, downloadDir, downloadedFiles, s3BucketName, `${remotePath}/${YOUTUBE_REPORTING_FILES}`, false));
+        const fullBackup = await Promise.all(uploadFilesOnS3(AWS, downloadDir, downloadedFiles, s3BucketName, `${remotePath}/${YOUTUBE_REPORTING_FILES_BY_CREATE_TIMES}`, true));
         console.log('Downloaded files backuped on S3!');
       }
 
       // Storing the output state file for next run.
       const outputStateFile = await createStateFile(configOutDir, STATE_FILE, outputState);
       // Cleaning.
-      const cleaning = await Promise.all(removeDirectories([ downloadDir, backupDir ]));
+      const cleaning = await Promise.all(removeDirectories([ downloadDir ]));
       console.log('Extraction completed!');
     } else {
       console.log(`None on the specified report types (${reportTypes.join(',')} found! No data downloaded.`);

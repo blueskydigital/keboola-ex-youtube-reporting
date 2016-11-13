@@ -1,6 +1,7 @@
 import csv from 'fast-csv';
 import path from 'path';
 import moment from 'moment';
+import Promise from 'bluebird';
 import { parse } from 'babyparse';
 import {
   first,
@@ -110,7 +111,6 @@ export function prepareListOfReportsForDownload({
   auth,
   jobs,
   pageSize,
-  createdAfter,
   youtubeReporting,
   onBehalfOfContentOwner
 }) {
@@ -149,14 +149,13 @@ export function prepareListOfReportsForDownload({
 /**
  * This function iterates over all records in an array and start downloading the reports.
  */
-export function downloadReports({ auth, isBackup, reports, outputDirectory, youtubeReporting, onBehalfOfContentOwner }) {
-  return reports
-    .map(report => {
-      return downloadSelectedReport({
-        auth, report, isBackup, outputDirectory,
-        youtubeReporting, onBehalfOfContentOwner
-      });
+export function downloadReports({ auth, reports, outputDirectory, youtubeReporting, onBehalfOfContentOwner }) {
+  return Promise.each(reports, report => {
+    return downloadSelectedReport({
+      outputDirectory, youtubeReporting,
+      auth, report, onBehalfOfContentOwner
     });
+  });
 }
 
 /**
@@ -165,13 +164,12 @@ export function downloadReports({ auth, isBackup, reports, outputDirectory, yout
 export function downloadSelectedReport({
   auth,
   report,
-  isBackup,
   outputDirectory,
   youtubeReporting,
   onBehalfOfContentOwner
 }) {
   return new Promise((resolve, reject) => {
-    const { jobId, createTime, downloadUrl, reportDate, reportTypeId } = report;
+    const { createTime, downloadUrl, reportDate, reportTypeId } = report;
     const resourceName = downloadUrl.substr(downloadUrl.indexOf('CONTENT_OWNER'), downloadUrl.length);
     youtubeReporting.media.download({
       auth,
@@ -182,9 +180,7 @@ export function downloadSelectedReport({
         reject(error);
       } else {
         const headers = true;
-        const fileName = !isBackup
-          ? `${reportTypeId}_${reportDate}.csv`
-          : `${reportTypeId}_${createTime}.csv`;
+        const fileName = `${reportTypeId}|${reportDate}|${createTime}.csv`;
         const parsedFile = parse(response);
         csv
           .writeToPath(path.join(outputDirectory, fileName), parsedFile.data, { headers })

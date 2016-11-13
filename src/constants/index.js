@@ -13,7 +13,7 @@ export const PRIMARY_KEY = [ 'id' ];
 export const YOUTUBE_REPORTING_FILES = 'youtube_reporting_data';
 export const YOUTUBE_REPORTING_FILES_BY_CREATE_TIMES = `${YOUTUBE_REPORTING_FILES}_by_create_times`;
 export const IS_INCREMENTAL = true;
-export const REPORTS_NUMBER_PER_REPORT_TYPE_LIMIT = 10;
+export const REPORTS_NUMBER_PER_REPORT_TYPE_LIMIT = 25;
 export const DEFAULT_PAGE_SIZE = 300;
 export const DEFAULT_YOUTUBE_NAMESPACES = [
   "https://www.googleapis.com/auth/yt-analytics-monetary.readonly",

@@ -20,7 +20,7 @@ import {
  */
 export function createTmpDirectory() {
   return new Promise((resolve, reject) => {
-    tmp.dir((error, path, cleanupCallback) => {
+    tmp.dir((error, path) => {
       if (error) {
         reject(error);
       } else {
