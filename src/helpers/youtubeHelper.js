@@ -23,10 +23,11 @@ import {
 /**
  * This function reads all available jobs based on the input parameters.
  */
-export function jobsList({ auth, onBehalfOfContentOwner, youtubeReporting }) {
+export function jobsList({ auth, onBehalfOfContentOwner, includeSystemManaged, youtubeReporting }) {
   return new Promise((resolve, reject) => {
     youtubeReporting.jobs.list({
       auth,
+      includeSystemManaged,
       onBehalfOfContentOwner
     }, (error, response) => {
       if (error) {

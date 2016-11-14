@@ -85,11 +85,11 @@ import {
       initialTimestamp,
       customPrimaryKeys,
       s3SecretAccessKey,
+      includeSystemManaged,
       onBehalfOfContentOwner
     } = await parseConfiguration(getConfig(path.join(command.data, CONFIG_FILE)));
     // Prepares the directory for the output.
     const downloadDir = await createTmpDirectory();
-    // const backupDir = await createTmpDirectory();
     const dataDir = command.data;
     const configInDir = path.join(dataDir, IN_DIR);
     const configOutDir = path.join(dataDir, OUT_DIR);
@@ -106,6 +106,7 @@ import {
     const { jobs } = await jobsList({
       auth,
       youtubeReporting,
+      includeSystemManaged,
       onBehalfOfContentOwner
     });
     // List of the desired jobs. Will be extended by initial date
