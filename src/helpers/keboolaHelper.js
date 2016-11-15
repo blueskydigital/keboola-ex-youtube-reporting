@@ -34,7 +34,8 @@ import {
 } from '../constants';
 import {
   createStateFile,
-  transformFilesByAddingAnIdElement
+  transformFilesByAddingAnIdElement,
+  transformFilesByAddingAnIdElementLowLevel
 } from './fileHelper';
 
 /**
@@ -310,7 +311,7 @@ export function generatePrimaryKey(data, reportType, keyFields, customPrimaryKey
 export function transferFilesFromSourceToDestination(metadata, keyFields, customPrimaryKeys) {
   return Promise.each(metadata, element => {
     const { source, destination, reportType } = element;
-    return transformFilesByAddingAnIdElement(source, destination, reportType, keyFields, customPrimaryKeys);
+    return transformFilesByAddingAnIdElementLowLevel(source, destination, reportType, keyFields, customPrimaryKeys);
   })
 }
 
