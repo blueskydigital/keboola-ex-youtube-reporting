@@ -14,6 +14,7 @@ export const YOUTUBE_REPORTING_FILES = 'youtube_reporting_data';
 export const YOUTUBE_REPORTING_FILES_BY_CREATE_TIMES = `${YOUTUBE_REPORTING_FILES}_by_create_times`;
 export const IS_INCREMENTAL = true;
 export const DEFAULT_SYSTEM_MANAGED_INCLUDED = true;
+export const DEFAULT_REPORT_TYPES_LIMIT = 3;
 export const REPORTS_NUMBER_PER_REPORT_TYPE_LIMIT = 25;
 export const DEFAULT_PAGE_SIZE = 300;
 export const DEFAULT_YOUTUBE_NAMESPACES = [
@@ -38,8 +39,9 @@ export const S3_REGIONS = [
 
 // job types
 export const JOB_ID = 'jobId';
+export const REPORT_DATE = 'reportDate';
 export const REPORT_TYPE_ID = 'reportTypeId';
-export const CREATE_TIME = 'createTime';
+export const UNIX_CREATE_TIME = 'createTimeUnixTimestamp';
 
 // Field names
 export const DATE_FIELD = 'date';

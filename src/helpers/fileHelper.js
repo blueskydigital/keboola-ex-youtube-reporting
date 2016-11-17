@@ -59,6 +59,7 @@ export function readFilesFromDirectory(filesDirectory) {
  * Usage of low level functions that reduce memory consumption.
  */
 export function transformFilesByAddingAnIdElementLowLevel(source, destination, reportType, keyFields, customPrimaryKeys, index) {
+  console.log('transform')
   return new Promise((resolve, reject) => {
       let lineNumber = 0;
       const fileNotExist = !isThere(destination);

@@ -1,6 +1,7 @@
 import AWS from 'aws-sdk';
 import path from 'path';
 import command from './helpers/cliHelper';
+import Promise from 'bluebird';
 import {
   youtubereporting
 } from 'googleapis';
@@ -33,10 +34,10 @@ import {
 } from './helpers/keboolaHelper';
 import {
   jobsList,
+  arrangeReports,
   filterJobsList,
   downloadReports,
   groupReportsByTypes,
-  sortReportsForDownload,
   addExtraReportMetadata,
   getNumberOfOldestRecords,
   prepareListOfReportsForDownload,
@@ -128,8 +129,9 @@ import {
 
       // In this part we are going to group the results by their particular types.
       const reports = getNumberOfOldestRecords(addExtraReportMetadata(
-        sortReportsForDownload(groupReportsByTypes(reportsToDownload, JOB_ID)), filteredJobs
+        arrangeReports(groupReportsByTypes(reportsToDownload, JOB_ID)), filteredJobs
       ), batchSize, REPORT_TYPE_ID);
+
 
       // Here we are going to download each report and wait until the process is completed.
       const downloadedReports = await downloadReports({
@@ -139,6 +141,7 @@ import {
 
       // In this step we are going to download names of the files we downloaded in the previous step.
       const downloadedFiles = await readFilesFromDirectory(downloadDir);
+
 
       if (!s3OutputOnly) {
         // We also have to prepare the proper metadata for file transfer.
@@ -152,7 +155,7 @@ import {
         const manifests = await Promise.all(generateManifestFiles(mergedFiles, dataOutDir, { incremental: IS_INCREMENTAL, primary_key: PRIMARY_KEY }));
       }
 
-      // This function prepares the data for state.json configuration.
+      // This function prepares the data for state_backup.json configuration.
       const outputState = combineStates(inputState, transformDatesIntoTimestamps(
         getLatestCreatedDateForEachReportType(extractCreateTimesForReportTypes(downloadedFiles))
       ));

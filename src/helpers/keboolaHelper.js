@@ -27,6 +27,7 @@ import {
   DEFAULT_REDIRECT_URL,
   DEFAULT_S3_OUTPUT_DIR,
   DEFAULT_YOUTUBE_NAMESPACES,
+  DEFAULT_REPORT_TYPES_LIMIT,
   DEFAULT_START_DATE_TIMESTAMP,
   DEFAULT_SYSTEM_MANAGED_INCLUDED,
   DEFAULT_OAUTH_EXPIRATION_TIMESTAMP,
@@ -34,8 +35,7 @@ import {
 } from '../constants';
 import {
   createStateFile,
-  transformFilesByAddingAnIdElement,
-  transformFilesByAddingAnIdElementLowLevel
+  transformFilesByAddingAnIdElement
 } from './fileHelper';
 
 /**
@@ -162,8 +162,8 @@ export function parseConfiguration(configObject) {
     if (isEmpty(reportTypes)) {
       reject('Array of reportTypes is empty! Please specify which reportTypes you want to download. Check out the documentation for more details.');
     }
-    if (size(uniq(reportTypes)) > 3) {
-      reject('There are only 3 elements allowed to have in the same configuration. Create a new one, if you wants more. Check out the documentation for more details.');
+    if (size(uniq(reportTypes)) > DEFAULT_REPORT_TYPES_LIMIT) {
+      reject(`There are only ${DEFAULT_REPORT_TYPES_LIMIT} elements allowed to have in the same configuration. Create a new one, if you wants more. Check out the documentation for more details.`);
     }
 
     // This parameter can overwrite the stored timestamps in the state file.
@@ -207,10 +207,14 @@ export function parseConfiguration(configObject) {
 export function getLatestCreatedDateForEachReportType(downloadedReports) {
   return downloadedReports
     .reduce((previous, current) => {
-      const key = first(Object.keys(current));
-      return Object.assign(previous, {
-        [ key ] : current[ key ]
-      });
+      const key = last(Object.keys(current));
+      if (isUndefined(previous[ key ]) || convertDateTimeIntoEpoch(current[ key ]) >= convertDateTimeIntoEpoch(previous[ key ])) {
+        return Object.assign(previous, {
+          [ key ] : current[ key ]
+        });
+      } else {
+        return previous;
+      }
     }, {});
 }
 
@@ -222,6 +226,20 @@ export function transformEpochTimestampIntoDate(timestamp) {
 }
 
 /**
+ * This function converts one of the following dates into epoch timestamo.
+ * 2016-08-22T23:54:22.654Z or 2016-08-06T23:30:50.748924Z
+ */
+export function convertDateTimeIntoEpoch(date) {
+  if (size(date) === 27) {
+    return parseInt(moment(date, 'YYYY-MM-DDTHH:mm:ss.SSSSSSZ').format('X'));
+  } else if (size(date) === 24) {
+    return parseInt(moment(date, 'YYYY-MM-DDTHH:mm:ss.SSSZ').format('X'));
+  } else {
+    return date;
+  }
+}
+
+/**
  * This function reads all attributes from the object and transform all values into timestamps
  */
 export function transformDatesIntoTimestamps(state) {
@@ -229,7 +247,7 @@ export function transformDatesIntoTimestamps(state) {
     .keys(state)
     .reduce((previous, current) => {
       return Object.assign(previous, {
-        [ current ]: parseInt(moment(state[ current ], 'YYYY-MM-DDTHH:mm:ss.SSSSSSZ').format('X'))
+        [ current ]: convertDateTimeIntoEpoch(state[ current ])
       });
     }, {});
 }
@@ -311,7 +329,7 @@ export function generatePrimaryKey(data, reportType, keyFields, customPrimaryKey
 export function transferFilesFromSourceToDestination(metadata, keyFields, customPrimaryKeys) {
   return Promise.each(metadata, element => {
     const { source, destination, reportType } = element;
-    return transformFilesByAddingAnIdElementLowLevel(source, destination, reportType, keyFields, customPrimaryKeys);
+    return transformFilesByAddingAnIdElement(source, destination, reportType, keyFields, customPrimaryKeys);
   })
 }
 

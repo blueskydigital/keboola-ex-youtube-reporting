@@ -14,9 +14,12 @@ import {
 import {
   ERROR_TYPE,
   FINISH_TYPE,
-  CREATE_TIME
+  REPORT_DATE,
+  REPORT_TYPE_ID,
+  UNIX_CREATE_TIME
 } from '../constants';
 import {
+  convertDateTimeIntoEpoch,
   transformEpochTimestampIntoDate
 } from './keboolaHelper';
 
@@ -207,15 +210,16 @@ export function getNumberOfOldestRecords(reports, limit, type) {
 }
 
 /**
- * This function reads the reports and sort the element by created dates from the oldest to the newest one.
+ * This function reads the reports and arrange them for further processing.
  */
-export function sortReportsForDownload(reportsByTypes) {
+export function arrangeReports(reportsByTypes) {
   return flattenDeep(Object
     .keys(reportsByTypes)
     .map(reportTypeId => {
-      return sortBy(reportsByTypes[reportTypeId], CREATE_TIME);
+      return reportsByTypes[reportTypeId];
     }));
 }
+
 
 /**
  * This function is similar sortReportsForDownload, however it also applies a limit to each array.
@@ -224,7 +228,7 @@ export function sortReportsForDownloadAndApplyLimit(reportsByTypes, limit) {
   return flattenDeep(Object
     .keys(reportsByTypes)
     .map(reportTypeId => {
-      return sortBy(reportsByTypes[reportTypeId], CREATE_TIME);
+      return sortBy(reportsByTypes[reportTypeId], UNIX_CREATE_TIME);
     })
     .map(reportTypeElements => {
       return reportTypeElements.slice(0, limit);
@@ -240,8 +244,9 @@ export function addExtraReportMetadata(reports, jobs) {
     .map(report => {
       const job = first(jobs.filter(job => job.id === report.jobId));
       return Object.assign({}, report, {
-        reportDate: moment(first(report.startTime.split('T')),'YYYY-MM-DD').format('YYYYMMDD'),
-        reportTypeId: job.reportTypeId
+        [ UNIX_CREATE_TIME ]: convertDateTimeIntoEpoch(report.createTime),
+        [ REPORT_DATE ]: moment(first(report.startTime.split('T')),'YYYY-MM-DD').format('YYYYMMDD'),
+        [ REPORT_TYPE_ID ]: job.reportTypeId
       });
     });
 }

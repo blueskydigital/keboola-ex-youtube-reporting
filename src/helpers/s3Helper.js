@@ -8,20 +8,21 @@ import { take, last, first } from 'lodash';
 export function uploadFilesOnS3(AWS, sourceDir, files, bucketName, remotePath, byCreatedDate) {
   return files.map(file => {
     const metadata = file.split('|');
-    const destination = byCreatedDate
-      ? `${first(metadata)}_${last(metadata)}`
+    const reportType = first(metadata);
+    const key = byCreatedDate
+      ? `${file}`
       : `${take(metadata, 2).join('_')}.csv`;
-    return uploadFile(AWS, sourceDir, file, bucketName, remotePath, destination)
+    return uploadFile(AWS, sourceDir, file, bucketName, `${remotePath}/${reportType}`, key);
   });
 }
 
 /**
  * This function does the actual file upload.
  */
-export function uploadFile(AWS, sourceDir, file, bucketName, remotePath, destination) {
+export function uploadFile(AWS, sourceDir, file, bucketName, remotePath, key) {
   return new Promise((resolve, reject) => {
     const bucket = path.join(bucketName, remotePath);
-    const s3 = new AWS.S3({ params: { Bucket: bucket, Key: destination }});
+    const s3 = new AWS.S3({ params: { Bucket: bucket, Key: key }});
     const body = fs.createReadStream(path.join(sourceDir, file));
     s3.upload({ Body: body })
       .send(error => {
