@@ -1,8 +1,8 @@
+import fs from 'fs';
 import csv from 'fast-csv';
 import path from 'path';
 import moment from 'moment';
 import Promise from 'bluebird';
-import { parse } from 'babyparse';
 import {
   first,
   sortBy,
@@ -12,8 +12,8 @@ import {
   isUndefined
 } from 'lodash';
 import {
+  END_TYPE,
   ERROR_TYPE,
-  FINISH_TYPE,
   REPORT_DATE,
   REPORT_TYPE_ID,
   UNIX_CREATE_TIME
@@ -183,13 +183,18 @@ export function downloadSelectedReport({
       if (error) {
         reject(error);
       } else {
-        const headers = true;
         const fileName = `${reportTypeId}|${reportDate}|${createTime}.csv`;
-        const parsedFile = parse(response);
         csv
-          .writeToPath(path.join(outputDirectory, fileName), parsedFile.data, { headers })
-          .on(ERROR_TYPE, error => reject(error))
-          .on(FINISH_TYPE, () => resolve({ [ reportTypeId ]: createTime }));
+          .fromString(response)
+          .on(ERROR_TYPE, error => {
+            reject(error);
+          })
+          .on(END_TYPE, () => {
+            resolve({ [ reportTypeId ]: createTime });
+          })
+          .pipe(csv.createWriteStream({ headers: true }))
+          .pipe(fs.createWriteStream(path.join(outputDirectory, fileName), { encoding: "utf8" }));
+
       };
     });
   });

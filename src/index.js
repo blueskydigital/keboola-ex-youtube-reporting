@@ -139,9 +139,10 @@ import {
         auth, reports, outputDirectory: downloadDir
       });
 
+      console.log('Reports downloaded!');
+
       // In this step we are going to download names of the files we downloaded in the previous step.
       const downloadedFiles = await readFilesFromDirectory(downloadDir);
-
 
       if (!s3OutputOnly) {
         // We also have to prepare the proper metadata for file transfer.
