@@ -4,7 +4,6 @@ import google from 'googleapis';
  * This function is ready to establish oAuth2 authentication based on the input params.
  */
 export function authorization({
-  scopes,
   clientId,
   redirectUrl,
   clientSecret,

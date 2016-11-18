@@ -132,8 +132,7 @@ import {
         arrangeReports(groupReportsByTypes(reportsToDownload, JOB_ID)), filteredJobs
       ), batchSize, REPORT_TYPE_ID);
 
-      console.log('reports');
-      console.log(reports);
+      console.log('reports for download: ', reports);
 
       // Here we are going to download each report and wait until the process is completed.
       const downloadedReports = await downloadReports({

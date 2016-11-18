@@ -6,7 +6,6 @@ export const CONFIG_FILE = 'config.json';
 export const DEFAULT_DATA_DIR = '/data';
 export const DEFAULT_S3_REGION = 'us-east-1';
 export const DEFAULT_S3_OUTPUT_DIR = '/kbc_upload';
-export const DEFAULT_TABLES_IN_DIR = `/${IN_DIR}/tables`;
 export const DEFAULT_TABLES_OUT_DIR = `/${OUT_DIR}/tables`;
 export const DEFAULT_TOKEN_TYPE = 'Bearer';
 export const PRIMARY_KEY = [ 'id' ];
@@ -49,5 +48,4 @@ export const DATE_FIELD = 'date';
 // Event types
 export const END_TYPE = 'end';
 export const ERROR_TYPE = 'error';
-export const FINISH_TYPE = 'finish';
 export const NON_EXISTING_FILE = 'ENOENT';
