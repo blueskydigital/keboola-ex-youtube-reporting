@@ -1,5 +1,4 @@
 import fs from 'fs';
-import csv from 'fast-csv';
 import path from 'path';
 import moment from 'moment';
 import Promise from 'bluebird';
@@ -12,7 +11,6 @@ import {
   isUndefined
 } from 'lodash';
 import {
-  END_TYPE,
   ERROR_TYPE,
   REPORT_DATE,
   REPORT_TYPE_ID,
@@ -184,17 +182,11 @@ export function downloadSelectedReport({
         reject(error);
       } else {
         const fileName = `${reportTypeId}|${reportDate}|${createTime}.csv`;
-        csv
-          .fromString(response)
-          .on(ERROR_TYPE, error => {
-            reject(error);
-          })
-          .on(END_TYPE, () => {
-            resolve({ [ reportTypeId ]: createTime });
-          })
-          .pipe(csv.createWriteStream({ headers: true }))
-          .pipe(fs.createWriteStream(path.join(outputDirectory, fileName), { encoding: "utf8" }));
-
+        const writeStream = fs.createWriteStream(path.join(outputDirectory, fileName));
+        writeStream.on(ERROR_TYPE, error => reject(error));
+        writeStream.write(response, () => {
+          resolve({ [ reportTypeId ]: createTime });
+        });
       };
     });
   });
