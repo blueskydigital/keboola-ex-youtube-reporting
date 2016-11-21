@@ -96,6 +96,7 @@ import {
     const configOutDir = path.join(dataDir, OUT_DIR);
     const dataOutDir = path.join(dataDir, DEFAULT_TABLES_OUT_DIR);
     const inputState = await readStateFile(configInDir, STATE_FILE);
+    console.log('input state: ', inputState);
     // Prepare the youtubeReporting object for data manipulation.
     const youtubeReporting = youtubereporting('v1');
     // The most important part is to authorize
@@ -132,7 +133,7 @@ import {
         arrangeReports(groupReportsByTypes(reportsToDownload, JOB_ID)), filteredJobs
       ), batchSize, REPORT_TYPE_ID);
 
-      console.log('reports for download: ', reports);
+      console.log('reports to download: ', reports);
 
       // Here we are going to download each report and wait until the process is completed.
       const downloadedReports = await downloadReports({
@@ -140,7 +141,7 @@ import {
         auth, reports, outputDirectory: downloadDir
       });
 
-      console.log('Reports downloaded!');
+      console.log('all reports downloaded!');
 
       // In this step we are going to download names of the files we downloaded in the previous step.
       const downloadedFiles = await readFilesFromDirectory(downloadDir);
@@ -157,11 +158,6 @@ import {
         const manifests = await Promise.all(generateManifestFiles(mergedFiles, dataOutDir, { incremental: IS_INCREMENTAL, primary_key: PRIMARY_KEY }));
       }
 
-      // This function prepares the data for state_backup.json configuration.
-      const outputState = combineStates(inputState, transformDatesIntoTimestamps(
-        getLatestCreatedDateForEachReportType(extractCreateTimesForReportTypes(downloadedFiles))
-      ));
-
       // We can backup/store the files on S3 storage.
       if (s3OutputOnly || s3Backup) {
         AWS.config.update({ region: s3Region, accessKeyId: s3AccessKeyId, secretAccessKey: s3SecretAccessKey });
@@ -170,10 +166,17 @@ import {
         console.log('Downloaded files backuped on S3!');
       }
 
+      // This function prepares the data for state_backup.json configuration.
+      const outputState = combineStates(inputState, transformDatesIntoTimestamps(
+        getLatestCreatedDateForEachReportType(extractCreateTimesForReportTypes(downloadedFiles))
+      ));
+
+      console.log('output state: ', outputState);
+
       // Storing the output state file for next run.
       const outputStateFile = await createStateFile(configOutDir, STATE_FILE, outputState);
       // Cleaning.
-      const cleaning = await Promise.all(removeDirectories([ downloadDir ]));
+      // const cleaning = await Promise.all(removeDirectories([ downloadDir ]));
       console.log('Extraction completed!');
     } else {
       console.log(`None on the specified report types (${reportTypes.join(',')} found! No data downloaded.`);

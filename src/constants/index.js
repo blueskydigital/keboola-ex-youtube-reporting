@@ -14,7 +14,7 @@ export const YOUTUBE_REPORTING_FILES_BY_CREATE_TIMES = `${YOUTUBE_REPORTING_FILE
 export const IS_INCREMENTAL = true;
 export const DEFAULT_SYSTEM_MANAGED_INCLUDED = true;
 export const DEFAULT_REPORT_TYPES_LIMIT = 3;
-export const REPORTS_NUMBER_PER_REPORT_TYPE_LIMIT = 25;
+export const REPORTS_NUMBER_PER_REPORT_TYPE_LIMIT = 15;
 export const DEFAULT_PAGE_SIZE = 300;
 export const DEFAULT_YOUTUBE_NAMESPACES = [
   "https://www.googleapis.com/auth/yt-analytics-monetary.readonly",

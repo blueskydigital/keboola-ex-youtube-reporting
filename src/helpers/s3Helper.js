@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import Promise from 'bluebird';
 import { take, last, first } from 'lodash';
 
 /**
