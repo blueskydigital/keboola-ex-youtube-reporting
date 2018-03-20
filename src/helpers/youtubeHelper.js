@@ -151,11 +151,11 @@ export function prepareListOfReportsForDownload({
 /**
  * This function iterates over all records in an array and start downloading the reports.
  */
-export function downloadReports({ auth, reports, outputDirectory, youtubeReporting, onBehalfOfContentOwner }) {
+export function downloadReports({ auth, reports, outputDirectory, youtubeReporting}) {
   return Promise.each(reports, report => {
     return downloadSelectedReport({
       outputDirectory, youtubeReporting,
-      auth, report, onBehalfOfContentOwner
+      auth, report
     });
   });
 }
@@ -167,16 +167,14 @@ export function downloadSelectedReport({
   auth,
   report,
   outputDirectory,
-  youtubeReporting,
-  onBehalfOfContentOwner
+  youtubeReporting
 }) {
   return new Promise((resolve, reject) => {
     const { createTime, downloadUrl, reportDate, reportTypeId } = report;
     const resourceName = downloadUrl.substr(downloadUrl.indexOf('CONTENT_OWNER'), downloadUrl.length);
     youtubeReporting.media.download({
       auth,
-      resourceName,
-      onBehalfOfContentOwner
+      resourceName
     }, (error, response) => {
       if (error) {
         reject(error);

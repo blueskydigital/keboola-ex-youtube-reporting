@@ -137,8 +137,7 @@ import {
 
       // Here we are going to download each report and wait until the process is completed.
       const downloadedReports = await downloadReports({
-        onBehalfOfContentOwner, youtubeReporting,
-        auth, reports, outputDirectory: downloadDir
+        youtubeReporting, auth, reports, outputDirectory: downloadDir
       });
 
       console.log('all reports downloaded!');
