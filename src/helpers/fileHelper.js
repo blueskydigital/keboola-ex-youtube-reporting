@@ -68,11 +68,11 @@ export function transformFilesByAddingAnIdElement(source, destination, reportTyp
       .on(ERROR_TYPE, error => {
         reject(error);
       })
-      .on(END_TYPE, () => {
-        resolve(`${destination} transfered!`);
-      })
       .pipe(csvStream)
-      .pipe(writeStream);
+      .pipe(writeStream)
+      .on('finish', () => {
+        resolve(`${destination} transfered!`);
+      });
   });
 }
 
